@@ -120,6 +120,7 @@ static usec_t arg_default_start_limit_interval = DEFAULT_START_LIMIT_INTERVAL;
 static unsigned arg_default_start_limit_burst = DEFAULT_START_LIMIT_BURST;
 static usec_t arg_runtime_watchdog = 0;
 static usec_t arg_shutdown_watchdog = 10 * USEC_PER_MINUTE;
+static const char *arg_watchdog_device_path = NULL;
 static char **arg_default_environment = NULL;
 static struct rlimit *arg_default_rlimit[_RLIMIT_MAX] = {};
 static uint64_t arg_capability_bounding_set = CAP_ALL;
@@ -461,6 +462,15 @@ static int parse_proc_cmdline_item(const char *key, const char *value, void *dat
                 if (arg_default_timeout_start_usec <= 0)
                         arg_default_timeout_start_usec = USEC_INFINITY;
 
+        } else if (proc_cmdline_key_streq(key, "systemd.watchdog_dev_path")) {
+
+                if (proc_cmdline_value_missing(key, value))
+                        return 0;
+
+                r = parse_path(value, &arg_watchdog_device_path);
+                if (r < 0)
+                        log_warning_errno(r, "Failed to parse watchdog device path: %s, ignoring.", value);
+
         } else if (streq(key, "quiet") && !value) {
 
                 if (arg_show_status == _SHOW_STATUS_UNSET)
@@ -751,6 +761,7 @@ static int parse_config_file(void) {
                 { "Manager", "JoinControllers",           config_parse_join_controllers, 0, &arg_join_controllers                  },
                 { "Manager", "RuntimeWatchdogSec",        config_parse_sec,              0, &arg_runtime_watchdog                  },
                 { "Manager", "ShutdownWatchdogSec",       config_parse_sec,              0, &arg_shutdown_watchdog                 },
+                { "Manager", "WatchdogDevicePath",        config_parse_path,             0, &arg_watchdog_device_path              },
                 { "Manager", "CapabilityBoundingSet",     config_parse_capability_set,   0, &arg_capability_bounding_set           },
 #if HAVE_SECCOMP
                 { "Manager", "SystemCallArchitectures",   config_parse_syscall_archs,    0, &arg_syscall_archs                     },
@@ -1519,6 +1530,11 @@ static int become_shutdown(
                 /* Tell the binary how often to ping, ignore failure */
                 if (asprintf(&e, "WATCHDOG_USEC="USEC_FMT, arg_shutdown_watchdog) > 0)
                         (void) strv_push(&env_block, e);
+
+                if (arg_watchdog_device_path) {
+                        if (asprintf(&e, "WATCHDOG_DEV_PATH=%s", arg_watchdog_device_path) > 0)
+                                (void) strv_push(&env_block, e);
+		}
         } else
                 watchdog_close(true);
 
@@ -1943,6 +1959,9 @@ int main(int argc, char *argv[]) {
 
                         test_usr();
                 }
+
+                if (arg_system && arg_watchdog_device_path)
+                        watchdog_set_path(arg_watchdog_device_path);
 
                 if (arg_system && arg_runtime_watchdog > 0 && arg_runtime_watchdog != USEC_INFINITY)
                         watchdog_set_timeout(&arg_runtime_watchdog);

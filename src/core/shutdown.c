@@ -167,6 +167,7 @@ int main(int argc, char *argv[]) {
         unsigned retries;
         int cmd, r;
         static const char* const dirs[] = {SYSTEM_SHUTDOWN_PATH, NULL};
+        const char *watchdog_device_path;
 
         log_parse_environment();
         r = parse_argv(argc, argv);
@@ -207,6 +208,9 @@ int main(int argc, char *argv[]) {
         in_container = detect_container() > 0;
 
         use_watchdog = !!getenv("WATCHDOG_USEC");
+        watchdog_device_path = getenv("WATCHDOG_DEV_PATH");
+        if (watchdog_device_path)
+                watchdog_set_path(watchdog_device_path);
 
         /* Lock us into memory */
         mlockall(MCL_CURRENT|MCL_FUTURE);
