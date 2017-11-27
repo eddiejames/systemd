@@ -31,6 +31,7 @@
 #include "watchdog.h"
 
 static int watchdog_fd = -1;
+static const char *watchdog_dev = "/dev/watchdog";
 static usec_t watchdog_timeout = USEC_INFINITY;
 
 static int update_timeout(void) {
@@ -84,7 +85,7 @@ static int open_watchdog(void) {
         if (watchdog_fd >= 0)
                 return 0;
 
-        watchdog_fd = open("/dev/watchdog", O_WRONLY|O_CLOEXEC);
+        watchdog_fd = open(watchdog_dev, O_WRONLY|O_CLOEXEC);
         if (watchdog_fd < 0)
                 return -errno;
 
@@ -94,6 +95,10 @@ static int open_watchdog(void) {
                          ident.firmware_version);
 
         return update_timeout();
+}
+
+void watchdog_set_path(const char *path) {
+	watchdog_dev = path;
 }
 
 int watchdog_set_timeout(usec_t *usec) {

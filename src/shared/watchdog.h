@@ -25,6 +25,7 @@
 #include "time-util.h"
 #include "util.h"
 
+void watchdog_set_path(const char *path);
 int watchdog_set_timeout(usec_t *usec);
 int watchdog_ping(void);
 void watchdog_close(bool disarm);
