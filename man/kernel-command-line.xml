@@ -383,6 +383,15 @@
       </varlistentry>
 
       <varlistentry>
+        <term><varname>systemd.watchdog_dev_path=</varname></term>
+
+        <listitem>
+          <para>Overwrites the watchdog device path <varname>WatchdogDevicePath=</varname> at boot. For details, see
+          <citerefentry><refentrytitle>system-system.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
         <term><varname>modules_load=</varname></term>
         <term><varname>rd.modules_load=</varname></term>
 
